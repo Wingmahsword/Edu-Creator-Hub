@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -6,13 +6,14 @@ import {
   TouchableOpacity,
   Dimensions,
   Platform,
+  Animated,
 } from "react-native";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useColors } from "@/hooks/useColors";
 
 const { width, height } = Dimensions.get("window");
-const REEL_HEIGHT = Platform.OS === "web" ? 600 : height;
+export const REEL_HEIGHT = Platform.OS === "web" ? 600 : height;
 
 interface ReelItem {
   id: string;
@@ -24,6 +25,7 @@ interface ReelItem {
   likes: number;
   comments: number;
   shares: number;
+  durationSeconds: number;
   duration: string;
   tags: string[];
   liked: boolean;
@@ -46,14 +48,47 @@ function formatCount(n: number): string {
 
 interface Props {
   reel: ReelItem;
+  isActive: boolean;
   onLike: () => void;
   onSave: () => void;
   onCreatorPress: () => void;
 }
 
-export function ReelCard({ reel, onLike, onSave, onCreatorPress }: Props) {
+export function ReelCard({ reel, isActive, onLike, onSave, onCreatorPress }: Props) {
   const colors = useColors();
   const bgColors = REEL_COLORS[reel.thumbnail] || REEL_COLORS.r1;
+
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const animRef = useRef<Animated.CompositeAnimation | null>(null);
+
+  useEffect(() => {
+    if (isActive) {
+      progressAnim.setValue(0);
+      animRef.current = Animated.timing(progressAnim, {
+        toValue: 1,
+        duration: reel.durationSeconds * 1000,
+        useNativeDriver: false,
+      });
+      animRef.current.start();
+
+      const pulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, { toValue: 0.85, duration: 800, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+        ])
+      );
+      pulse.start();
+      return () => {
+        animRef.current?.stop();
+        pulse.stop();
+        pulseAnim.setValue(1);
+      };
+    } else {
+      animRef.current?.stop();
+      progressAnim.setValue(0);
+    }
+  }, [isActive, reel.id]);
 
   const handleLike = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -65,34 +100,33 @@ export function ReelCard({ reel, onLike, onSave, onCreatorPress }: Props) {
     onSave();
   };
 
+  const progressWidth = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0%", "100%"],
+  });
+
   return (
     <View style={[styles.container, { height: REEL_HEIGHT }]}>
-      <View
-        style={[
-          styles.background,
-          {
-            backgroundColor: bgColors[0],
-          },
-        ]}
-      >
-        <View
+      <View style={[styles.background, { backgroundColor: bgColors[0] }]}>
+        <View style={[styles.gradientOverlay, { backgroundColor: bgColors[1], opacity: 0.6 }]} />
+        <View style={[styles.accentOrb, { backgroundColor: bgColors[2], opacity: 0.25 }]} />
+        <View style={[styles.accentOrb2, { backgroundColor: bgColors[2], opacity: 0.12 }]} />
+
+        <Animated.View style={[styles.playIconContainer, { opacity: isActive ? pulseAnim : 0.3 }]}>
+          <View style={styles.playCircle}>
+            <Feather name={isActive ? "pause" : "play"} size={28} color="rgba(255,255,255,0.9)" />
+          </View>
+        </Animated.View>
+      </View>
+
+      {/* Progress bar */}
+      <View style={styles.progressTrack}>
+        <Animated.View
           style={[
-            styles.gradientOverlay,
-            { backgroundColor: bgColors[1], opacity: 0.6 },
+            styles.progressFill,
+            { width: progressWidth, backgroundColor: bgColors[2] },
           ]}
         />
-        <View
-          style={[
-            styles.accentOrb,
-            { backgroundColor: bgColors[2], opacity: 0.3 },
-          ]}
-        />
-        <View style={styles.playIconContainer}>
-          <Feather name="play-circle" size={56} color="rgba(255,255,255,0.15)" />
-        </View>
-        <View style={styles.durationBadge}>
-          <Text style={styles.durationText}>{reel.duration}</Text>
-        </View>
       </View>
 
       <View style={styles.overlay}>
@@ -104,6 +138,9 @@ export function ReelCard({ reel, onLike, onSave, onCreatorPress }: Props) {
               </View>
             ))}
           </View>
+          <View style={styles.durationBadge}>
+            <Text style={styles.durationText}>{reel.duration}</Text>
+          </View>
         </View>
 
         <View style={styles.sideActions}>
@@ -111,7 +148,7 @@ export function ReelCard({ reel, onLike, onSave, onCreatorPress }: Props) {
             <Ionicons
               name={reel.liked ? "heart" : "heart-outline"}
               size={28}
-              color={reel.liked ? "#FF4B6A" : "#fff"}
+              color={reel.liked ? "#E8956D" : "#fff"}
             />
             <Text style={styles.actionCount}>{formatCount(reel.likes + (reel.liked ? 1 : 0))}</Text>
           </TouchableOpacity>
@@ -137,13 +174,19 @@ export function ReelCard({ reel, onLike, onSave, onCreatorPress }: Props) {
 
         <View style={styles.bottomContent}>
           <TouchableOpacity style={styles.creatorRow} onPress={onCreatorPress} activeOpacity={0.85}>
-            <View style={styles.avatarCircle}>
+            <View style={[styles.avatarCircle, { backgroundColor: bgColors[2] }]}>
               <Text style={styles.avatarText}>{reel.creatorAvatar}</Text>
             </View>
             <View>
               <Text style={styles.creatorName}>{reel.creator}</Text>
               <Text style={styles.creatorHandle}>{reel.creatorHandle}</Text>
             </View>
+            {isActive && (
+              <View style={styles.livePill}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveText}>Playing</Text>
+              </View>
+            )}
           </TouchableOpacity>
 
           <Text style={styles.reelTitle} numberOfLines={2}>{reel.title}</Text>
@@ -157,7 +200,7 @@ export function ReelCard({ reel, onLike, onSave, onCreatorPress }: Props) {
 const styles = StyleSheet.create({
   container: {
     width,
-    backgroundColor: "#0F0F1A",
+    backgroundColor: "#1A1512",
   },
   background: {
     ...StyleSheet.absoluteFillObject,
@@ -168,65 +211,98 @@ const styles = StyleSheet.create({
   },
   accentOrb: {
     position: "absolute",
-    width: width * 1.2,
-    height: width * 1.2,
-    borderRadius: width * 0.6,
-    top: -width * 0.3,
-    left: -width * 0.1,
+    width: width * 1.3,
+    height: width * 1.3,
+    borderRadius: width * 0.65,
+    top: -width * 0.35,
+    left: -width * 0.15,
+  },
+  accentOrb2: {
+    position: "absolute",
+    width: width * 0.8,
+    height: width * 0.8,
+    borderRadius: width * 0.4,
+    bottom: -width * 0.1,
+    right: -width * 0.2,
   },
   playIconContainer: {
     position: "absolute",
     top: "50%",
     left: "50%",
-    transform: [{ translateX: -28 }, { translateY: -28 }],
+    transform: [{ translateX: -30 }, { translateY: -30 }],
   },
-  durationBadge: {
+  playCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.2)",
+  },
+  progressTrack: {
     position: "absolute",
-    top: Platform.OS === "web" ? 77 : 60,
-    right: 16,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 2.5,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    zIndex: 10,
   },
-  durationText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
+  progressFill: {
+    height: "100%",
+    borderRadius: 2,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: "space-between",
-    paddingTop: Platform.OS === "web" ? 77 : 60,
+    paddingTop: Platform.OS === "web" ? 80 : 64,
     paddingBottom: Platform.OS === "web" ? 100 : 120,
     paddingHorizontal: 16,
   },
   topRow: {
     flexDirection: "row",
     alignItems: "flex-start",
+    justifyContent: "space-between",
   },
   tagRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 6,
+    flex: 1,
   },
   tagPill: {
-    backgroundColor: "rgba(122,158,135,0.4)",
+    backgroundColor: "rgba(122,158,135,0.35)",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(122,158,135,0.3)",
   },
   tagText: {
     color: "#fff",
     fontSize: 11,
     fontWeight: "600",
   },
+  durationBadge: {
+    backgroundColor: "rgba(0,0,0,0.45)",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+    marginLeft: 8,
+  },
+  durationText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "600",
+  },
   sideActions: {
     position: "absolute",
-    right: 16,
+    right: 14,
     bottom: Platform.OS === "web" ? 140 : 180,
     alignItems: "center",
-    gap: 20,
+    gap: 22,
   },
   actionBtn: {
     alignItems: "center",
@@ -242,7 +318,7 @@ const styles = StyleSheet.create({
   },
   bottomContent: {
     gap: 8,
-    paddingRight: 60,
+    paddingRight: 64,
   },
   creatorRow: {
     flexDirection: "row",
@@ -251,14 +327,13 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   avatarCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#6C63FF",
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.3)",
+    borderColor: "rgba(255,255,255,0.35)",
   },
   avatarText: {
     color: "#fff",
@@ -274,6 +349,29 @@ const styles = StyleSheet.create({
     color: "rgba(255,255,255,0.6)",
     fontSize: 12,
   },
+  livePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: "rgba(122,158,135,0.3)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(168,197,176,0.5)",
+    marginLeft: 4,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#A8C5B0",
+  },
+  liveText: {
+    color: "#A8C5B0",
+    fontSize: 10,
+    fontWeight: "700",
+  },
   reelTitle: {
     color: "#fff",
     fontSize: 16,
@@ -281,7 +379,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   reelDesc: {
-    color: "rgba(255,255,255,0.75)",
+    color: "rgba(255,255,255,0.72)",
     fontSize: 13,
     lineHeight: 18,
   },

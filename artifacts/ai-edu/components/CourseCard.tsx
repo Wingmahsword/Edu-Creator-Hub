@@ -38,6 +38,8 @@ interface Course {
   title: string;
   instructor: string;
   instructorAvatar: string;
+  partner?: string;
+  partnerLogo?: string;
   category: string;
   level: "Beginner" | "Intermediate" | "Advanced";
   duration: string;
@@ -49,6 +51,7 @@ interface Course {
   thumbnail: string;
   description: string;
   tags: string[];
+  rewardCoins?: number;
 }
 
 interface Props {

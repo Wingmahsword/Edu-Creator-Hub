@@ -1,24 +1,36 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useCallback } from "react";
 import {
   View,
-  Text,
   StyleSheet,
   FlatList,
   Dimensions,
   Platform,
+  ViewToken,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useApp } from "@/contexts/AppContext";
-import { ReelCard } from "@/components/ReelCard";
-import { useRouter } from "expo-router";
+import { ReelCard, REEL_HEIGHT } from "@/components/ReelCard";
 
 const { height } = Dimensions.get("window");
-const REEL_HEIGHT = Platform.OS === "web" ? 600 : height;
 
 export default function FeedScreen() {
   const { reels, toggleLike, toggleSave } = useApp();
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const [activeReelId, setActiveReelId] = useState<string>(reels[0]?.id ?? "");
+
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 60,
+  });
+
+  const onViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      if (viewableItems.length > 0) {
+        const topItem = viewableItems[0];
+        if (topItem.item?.id) {
+          setActiveReelId(topItem.item.id);
+        }
+      }
+    },
+    []
+  );
 
   return (
     <View style={styles.container}>
@@ -29,9 +41,12 @@ export default function FeedScreen() {
         showsVerticalScrollIndicator={false}
         snapToInterval={REEL_HEIGHT}
         decelerationRate="fast"
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig.current}
         renderItem={({ item }) => (
           <ReelCard
             reel={item}
+            isActive={item.id === activeReelId}
             onLike={() => toggleLike(item.id)}
             onSave={() => toggleSave(item.id)}
             onCreatorPress={() => {}}
@@ -50,6 +65,6 @@ export default function FeedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0F0F1A",
+    backgroundColor: "#1A1512",
   },
 });

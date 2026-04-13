@@ -1,11 +1,13 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-interface Course {
+export interface Course {
   id: string;
   title: string;
   instructor: string;
   instructorAvatar: string;
+  partner: "coursera" | "anthropic" | "google" | "internal";
+  partnerLogo: string;
   category: string;
   level: "Beginner" | "Intermediate" | "Advanced";
   duration: string;
@@ -17,6 +19,7 @@ interface Course {
   thumbnail: string;
   description: string;
   tags: string[];
+  rewardCoins: number;
 }
 
 interface Reel {
@@ -29,6 +32,7 @@ interface Reel {
   likes: number;
   comments: number;
   shares: number;
+  durationSeconds: number;
   duration: string;
   tags: string[];
   liked: boolean;
@@ -67,10 +71,13 @@ interface AppState {
   savedReels: string[];
   likedReels: string[];
   followingCreators: string[];
+  coins: number;
+  hasClaimedWelcomeBonus: boolean;
+  claimWelcomeBonus: () => void;
   toggleLike: (reelId: string) => void;
   toggleSave: (reelId: string) => void;
   toggleFollow: (creatorId: string) => void;
-  enrollCourse: (courseId: string) => void;
+  enrollCourse: (courseId: string) => { coinsEarned: number };
   addPlaygroundSession: (session: PlaygroundSession) => void;
   updatePlaygroundSession: (id: string, messages: Array<{ role: "user" | "assistant"; content: string }>) => void;
 }
@@ -133,11 +140,177 @@ const CREATORS: Creator[] = [
 ];
 
 const COURSES: Course[] = [
+  // --- Partner: Coursera ---
   {
-    id: "course1",
+    id: "course_ng_ml",
+    title: "Machine Learning Specialization",
+    instructor: "Andrew Ng",
+    instructorAvatar: "AN",
+    partner: "coursera",
+    partnerLogo: "coursera",
+    category: "Machine Learning",
+    level: "Beginner",
+    duration: "3 months",
+    lessons: 92,
+    enrolled: false,
+    progress: 0,
+    rating: 4.9,
+    students: 1200000,
+    thumbnail: "ml",
+    description: "The most popular ML course on earth. Andrew Ng teaches supervised learning, unsupervised learning, and best practices in machine learning.",
+    tags: ["Python", "Supervised Learning", "Neural Networks", "TensorFlow"],
+    rewardCoins: 150,
+  },
+  {
+    id: "course_ng_everyone",
+    title: "AI for Everyone",
+    instructor: "Andrew Ng",
+    instructorAvatar: "AN",
+    partner: "coursera",
+    partnerLogo: "coursera",
+    category: "AI Fundamentals",
+    level: "Beginner",
+    duration: "6 hours",
+    lessons: 18,
+    enrolled: false,
+    progress: 0,
+    rating: 4.8,
+    students: 890000,
+    thumbnail: "ethics",
+    description: "Non-technical course on what AI can and cannot do. Learn to spot AI opportunities and understand the societal impact.",
+    tags: ["No Code", "Strategy", "Business AI", "Fundamentals"],
+    rewardCoins: 75,
+  },
+  {
+    id: "course_dl_specialization",
+    title: "Deep Learning Specialization",
+    instructor: "Andrew Ng",
+    instructorAvatar: "AN",
+    partner: "coursera",
+    partnerLogo: "coursera",
+    category: "Deep Learning",
+    level: "Intermediate",
+    duration: "5 months",
+    lessons: 120,
+    enrolled: false,
+    progress: 0,
+    rating: 4.9,
+    students: 760000,
+    thumbnail: "dl",
+    description: "Build and train deep neural networks, CNNs, RNNs, and Transformers. The gold standard deep learning curriculum.",
+    tags: ["TensorFlow", "CNNs", "RNNs", "Transformers"],
+    rewardCoins: 200,
+  },
+  // --- Partner: Anthropic ---
+  {
+    id: "course_anthropic_prompting",
+    title: "Prompt Engineering for Claude",
+    instructor: "Anthropic Team",
+    instructorAvatar: "AT",
+    partner: "anthropic",
+    partnerLogo: "anthropic",
+    category: "Prompt Engineering",
+    level: "Beginner",
+    duration: "4 hours",
+    lessons: 22,
+    enrolled: false,
+    progress: 0,
+    rating: 4.9,
+    students: 340000,
+    thumbnail: "prompt",
+    description: "Official Anthropic course on getting the best from Claude. Learn chain-of-thought, role prompting, and advanced reasoning techniques.",
+    tags: ["Claude", "Chain-of-Thought", "Constitutional AI", "Safety"],
+    rewardCoins: 100,
+  },
+  {
+    id: "course_anthropic_safety",
+    title: "AI Safety & Constitutional AI",
+    instructor: "Anthropic Research",
+    instructorAvatar: "AR",
+    partner: "anthropic",
+    partnerLogo: "anthropic",
+    category: "AI Ethics",
+    level: "Intermediate",
+    duration: "6 hours",
+    lessons: 28,
+    enrolled: false,
+    progress: 0,
+    rating: 4.8,
+    students: 180000,
+    thumbnail: "ethics",
+    description: "Learn how Constitutional AI works and how Anthropic trains safe AI. Covers RLHF, harmlessness, and responsible AI development.",
+    tags: ["Safety", "RLHF", "Constitutional AI", "Alignment"],
+    rewardCoins: 120,
+  },
+  // --- Partner: Google ---
+  {
+    id: "course_google_mlcc",
+    title: "Machine Learning Crash Course",
+    instructor: "Google AI Team",
+    instructorAvatar: "GA",
+    partner: "google",
+    partnerLogo: "google",
+    category: "Machine Learning",
+    level: "Beginner",
+    duration: "15 hours",
+    lessons: 40,
+    enrolled: false,
+    progress: 0,
+    rating: 4.7,
+    students: 2100000,
+    thumbnail: "ml",
+    description: "Google's fast-paced, practical introduction to machine learning. Uses TensorFlow and real Google datasets.",
+    tags: ["TensorFlow", "Google", "Regression", "Classification"],
+    rewardCoins: 100,
+  },
+  {
+    id: "course_google_genai",
+    title: "Generative AI Learning Path",
+    instructor: "Google Cloud",
+    instructorAvatar: "GC",
+    partner: "google",
+    partnerLogo: "google",
+    category: "Generative AI",
+    level: "Beginner",
+    duration: "8 hours",
+    lessons: 30,
+    enrolled: true,
+    progress: 25,
+    rating: 4.8,
+    students: 650000,
+    thumbnail: "llm",
+    description: "A comprehensive path covering LLMs, image generation, and generative AI applications on Google Cloud.",
+    tags: ["Vertex AI", "Gemini", "LLMs", "Cloud"],
+    rewardCoins: 125,
+  },
+  {
+    id: "course_google_gemini",
+    title: "Building with Gemini API",
+    instructor: "Google DeepMind",
+    instructorAvatar: "GD",
+    partner: "google",
+    partnerLogo: "google",
+    category: "AI Applications",
+    level: "Intermediate",
+    duration: "10 hours",
+    lessons: 36,
+    enrolled: false,
+    progress: 0,
+    rating: 4.7,
+    students: 320000,
+    thumbnail: "apps",
+    description: "Build production apps using Google's Gemini API. Covers multimodal inputs, grounding, and real-world deployment.",
+    tags: ["Gemini API", "Python", "Multimodal", "Production"],
+    rewardCoins: 130,
+  },
+  // --- Internal ---
+  {
+    id: "course_mastering_prompts",
     title: "Mastering Prompt Engineering",
     instructor: "Marcus Rivera",
     instructorAvatar: "MR",
+    partner: "internal",
+    partnerLogo: "internal",
     category: "Prompt Engineering",
     level: "Beginner",
     duration: "4h 30m",
@@ -149,91 +322,7 @@ const COURSES: Course[] = [
     thumbnail: "prompt",
     description: "Learn to craft precise, effective prompts for any AI system. From ChatGPT to Claude — master the language of AI.",
     tags: ["ChatGPT", "Claude", "Prompts", "AI Writing"],
-  },
-  {
-    id: "course2",
-    title: "Machine Learning Fundamentals",
-    instructor: "Sarah Chen",
-    instructorAvatar: "SC",
-    category: "Machine Learning",
-    level: "Intermediate",
-    duration: "12h 15m",
-    lessons: 48,
-    enrolled: true,
-    progress: 35,
-    rating: 4.8,
-    students: 28900,
-    thumbnail: "ml",
-    description: "Comprehensive introduction to ML concepts. Supervised, unsupervised, and reinforcement learning explained clearly.",
-    tags: ["Python", "TensorFlow", "Scikit-learn", "Data Science"],
-  },
-  {
-    id: "course3",
-    title: "Neural Networks & Deep Learning",
-    instructor: "Aiko Tanaka",
-    instructorAvatar: "AT",
-    category: "Deep Learning",
-    level: "Advanced",
-    duration: "18h 45m",
-    lessons: 62,
-    enrolled: false,
-    progress: 0,
-    rating: 4.9,
-    students: 19200,
-    thumbnail: "dl",
-    description: "Dive deep into neural network architecture. Build transformers, CNNs, and RNNs from scratch.",
-    tags: ["PyTorch", "Transformers", "CNNs", "Research"],
-  },
-  {
-    id: "course4",
-    title: "Building AI-Powered Apps",
-    instructor: "Dev Patel",
-    instructorAvatar: "DP",
-    category: "AI Applications",
-    level: "Intermediate",
-    duration: "8h 20m",
-    lessons: 32,
-    enrolled: false,
-    progress: 0,
-    rating: 4.7,
-    students: 22100,
-    thumbnail: "apps",
-    description: "Turn AI APIs into real products. Build chatbots, image generators, and intelligent tools.",
-    tags: ["OpenAI API", "React", "Node.js", "Product"],
-  },
-  {
-    id: "course5",
-    title: "AI Ethics & Safety",
-    instructor: "Sarah Chen",
-    instructorAvatar: "SC",
-    category: "AI Ethics",
-    level: "Beginner",
-    duration: "3h 10m",
-    lessons: 18,
-    enrolled: false,
-    progress: 0,
-    rating: 4.6,
-    students: 15800,
-    thumbnail: "ethics",
-    description: "Understand bias, fairness, and responsible AI development. A must for every AI practitioner.",
-    tags: ["Ethics", "Bias", "Safety", "Policy"],
-  },
-  {
-    id: "course6",
-    title: "Large Language Models Explained",
-    instructor: "Aiko Tanaka",
-    instructorAvatar: "AT",
-    category: "Machine Learning",
-    level: "Intermediate",
-    duration: "6h 45m",
-    lessons: 28,
-    enrolled: false,
-    progress: 0,
-    rating: 4.8,
-    students: 31200,
-    thumbnail: "llm",
-    description: "How GPT, BERT, and modern LLMs actually work. Architecture, training, and fine-tuning demystified.",
-    tags: ["LLMs", "GPT", "BERT", "Transformers"],
+    rewardCoins: 80,
   },
 ];
 
@@ -248,6 +337,7 @@ const REELS: Reel[] = [
     likes: 18400,
     comments: 892,
     shares: 2100,
+    durationSeconds: 58,
     duration: "0:58",
     tags: ["#prompts", "#chatgpt", "#ai"],
     liked: false,
@@ -264,6 +354,7 @@ const REELS: Reel[] = [
     likes: 24100,
     comments: 1203,
     shares: 3400,
+    durationSeconds: 62,
     duration: "1:02",
     tags: ["#chainofthought", "#prompting", "#ml"],
     liked: true,
@@ -280,6 +371,7 @@ const REELS: Reel[] = [
     likes: 31200,
     comments: 1567,
     shares: 4800,
+    durationSeconds: 75,
     duration: "1:15",
     tags: ["#attention", "#transformers", "#deeplearning"],
     liked: false,
@@ -296,6 +388,7 @@ const REELS: Reel[] = [
     likes: 42800,
     comments: 2341,
     shares: 6700,
+    durationSeconds: 47,
     duration: "0:47",
     tags: ["#openai", "#react", "#buildinpublic"],
     liked: false,
@@ -312,6 +405,7 @@ const REELS: Reel[] = [
     likes: 28700,
     comments: 1893,
     shares: 5200,
+    durationSeconds: 90,
     duration: "1:30",
     tags: ["#rag", "#finetuning", "#llm"],
     liked: false,
@@ -321,10 +415,12 @@ const REELS: Reel[] = [
 ];
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [enrolledCourses, setEnrolledCourses] = useState<string[]>(["course2"]);
+  const [enrolledCourses, setEnrolledCourses] = useState<string[]>(["course_google_genai"]);
   const [savedReels, setSavedReels] = useState<string[]>(["r3"]);
   const [likedReels, setLikedReels] = useState<string[]>(["r2"]);
   const [followingCreators, setFollowingCreators] = useState<string[]>(["c2"]);
+  const [coins, setCoins] = useState(100);
+  const [hasClaimedWelcomeBonus, setHasClaimedWelcomeBonus] = useState(false);
   const [playgroundSessions, setPlaygroundSessions] = useState<PlaygroundSession[]>([
     {
       id: "ps1",
@@ -334,6 +430,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       messages: [],
     },
   ]);
+
+  useEffect(() => {
+    AsyncStorage.getItem("coins").then((val) => {
+      if (val !== null) setCoins(parseInt(val, 10));
+    });
+    AsyncStorage.getItem("welcomeClaimed").then((val) => {
+      if (val === "true") setHasClaimedWelcomeBonus(true);
+    });
+    AsyncStorage.getItem("enrolledCourses").then((val) => {
+      if (val) setEnrolledCourses(JSON.parse(val));
+    });
+  }, []);
+
+  const saveCoins = (amount: number) => {
+    setCoins(amount);
+    AsyncStorage.setItem("coins", amount.toString());
+  };
+
+  const claimWelcomeBonus = () => {
+    const newCoins = coins + 100;
+    saveCoins(newCoins);
+    setHasClaimedWelcomeBonus(true);
+    AsyncStorage.setItem("welcomeClaimed", "true");
+  };
 
   const toggleLike = (reelId: string) => {
     setLikedReels((prev) =>
@@ -353,10 +473,16 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     );
   };
 
-  const enrollCourse = (courseId: string) => {
-    setEnrolledCourses((prev) =>
-      prev.includes(courseId) ? prev : [...prev, courseId]
-    );
+  const enrollCourse = (courseId: string): { coinsEarned: number } => {
+    if (enrolledCourses.includes(courseId)) return { coinsEarned: 0 };
+    const course = COURSES.find((c) => c.id === courseId);
+    const reward = course?.rewardCoins ?? 50;
+    const newEnrolled = [...enrolledCourses, courseId];
+    setEnrolledCourses(newEnrolled);
+    AsyncStorage.setItem("enrolledCourses", JSON.stringify(newEnrolled));
+    const newCoins = coins + reward;
+    saveCoins(newCoins);
+    return { coinsEarned: reward };
   };
 
   const addPlaygroundSession = (session: PlaygroundSession) => {
@@ -399,6 +525,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         savedReels,
         likedReels,
         followingCreators,
+        coins,
+        hasClaimedWelcomeBonus,
+        claimWelcomeBonus,
         toggleLike,
         toggleSave,
         toggleFollow,
