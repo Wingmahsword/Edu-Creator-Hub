@@ -1,10 +1,48 @@
-import { StyleSheet, Text, View } from "react-native";
+import React, { useRef, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  Dimensions,
+  Platform,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useApp } from "@/contexts/AppContext";
+import { ReelCard } from "@/components/ReelCard";
+import { useRouter } from "expo-router";
 
-export default function TabOneScreen() {
+const { height } = Dimensions.get("window");
+const REEL_HEIGHT = Platform.OS === "web" ? 600 : height;
+
+export default function FeedScreen() {
+  const { reels, toggleLike, toggleSave } = useApp();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Replit Agent is building...</Text>
-      <Text style={styles.text}>Your app will appear here once it's ready.</Text>
+      <FlatList
+        data={reels}
+        keyExtractor={(item) => item.id}
+        pagingEnabled
+        showsVerticalScrollIndicator={false}
+        snapToInterval={REEL_HEIGHT}
+        decelerationRate="fast"
+        renderItem={({ item }) => (
+          <ReelCard
+            reel={item}
+            onLike={() => toggleLike(item.id)}
+            onSave={() => toggleSave(item.id)}
+            onCreatorPress={() => {}}
+          />
+        )}
+        getItemLayout={(_, index) => ({
+          length: REEL_HEIGHT,
+          offset: REEL_HEIGHT * index,
+          index,
+        })}
+      />
     </View>
   );
 }
@@ -12,17 +50,6 @@ export default function TabOneScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  text: {
-    fontSize: 16,
-    textAlign: "center",
-    paddingHorizontal: 20,
+    backgroundColor: "#0F0F1A",
   },
 });
