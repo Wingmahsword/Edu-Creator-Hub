@@ -4,30 +4,21 @@ import {
   StyleSheet,
   FlatList,
   Dimensions,
-  Platform,
   ViewToken,
 } from "react-native";
 import { useApp } from "@/contexts/AppContext";
 import { ReelCard, REEL_HEIGHT } from "@/components/ReelCard";
 
-const { height } = Dimensions.get("window");
-
 export default function FeedScreen() {
   const { reels, toggleLike, toggleSave } = useApp();
   const [activeReelId, setActiveReelId] = useState<string>(reels[0]?.id ?? "");
 
-  const viewabilityConfig = useRef({
-    itemVisiblePercentThreshold: 60,
-  });
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 55 });
 
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      if (viewableItems.length > 0) {
-        const topItem = viewableItems[0];
-        if (topItem.item?.id) {
-          setActiveReelId(topItem.item.id);
-        }
-      }
+      const top = viewableItems[0];
+      if (top?.item?.id) setActiveReelId(top.item.id);
     },
     []
   );
@@ -40,6 +31,7 @@ export default function FeedScreen() {
         pagingEnabled
         showsVerticalScrollIndicator={false}
         snapToInterval={REEL_HEIGHT}
+        snapToAlignment="start"
         decelerationRate="fast"
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig.current}
@@ -65,6 +57,6 @@ export default function FeedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#1A1512",
+    backgroundColor: "#141612",
   },
 });

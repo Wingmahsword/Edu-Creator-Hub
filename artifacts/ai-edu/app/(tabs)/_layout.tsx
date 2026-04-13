@@ -37,31 +37,39 @@ function ClassicTabLayout() {
   const isDark = colorScheme === "dark";
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
+  const isAndroid = Platform.OS === "android";
 
   return (
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.mutedForeground,
+        tabBarInactiveTintColor: "rgba(200,195,190,0.7)",
         headerShown: false,
         tabBarStyle: {
           position: "absolute",
-          backgroundColor: isIOS ? "transparent" : colors.tabBar,
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
+          backgroundColor: "transparent",
+          borderTopWidth: 0,
           elevation: 0,
-          ...(isWeb ? { height: 84 } : {}),
+          shadowOpacity: 0,
+          height: isWeb ? 84 : 83,
         },
-        tabBarBackground: () =>
-          isIOS ? (
-            <BlurView
-              intensity={80}
-              tint={isDark ? "dark" : "light"}
-              style={StyleSheet.absoluteFill}
-            />
-          ) : isWeb ? (
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.tabBar }]} />
-          ) : null,
+        tabBarBackground: () => (
+          <BlurView
+            intensity={isWeb ? 60 : 80}
+            tint="dark"
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                backgroundColor: isAndroid
+                  ? "rgba(20,22,18,0.88)"
+                  : "rgba(20,22,18,0.55)",
+                borderTopWidth: 0.5,
+                borderTopColor: "rgba(255,255,255,0.08)",
+                overflow: "hidden",
+              },
+            ]}
+          />
+        ),
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: "600",
@@ -73,9 +81,15 @@ function ClassicTabLayout() {
         name="index"
         options={{
           title: "Feed",
+          tabBarActiveTintColor: "#A8C5B0",
+          tabBarInactiveTintColor: "rgba(200,200,200,0.5)",
           tabBarIcon: ({ color, focused }) =>
             isIOS ? (
-              <SymbolView name={focused ? "play.rectangle.fill" : "play.rectangle"} tintColor={color} size={22} />
+              <SymbolView
+                name={focused ? "play.rectangle.fill" : "play.rectangle"}
+                tintColor={color}
+                size={22}
+              />
             ) : (
               <Ionicons name={focused ? "play" : "play-outline"} size={22} color={color} />
             ),

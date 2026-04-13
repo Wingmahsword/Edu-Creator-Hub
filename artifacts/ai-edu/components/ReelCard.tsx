@@ -8,12 +8,16 @@ import {
   Platform,
   Animated,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { Feather, Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useColors } from "@/hooks/useColors";
 
 const { width, height } = Dimensions.get("window");
-export const REEL_HEIGHT = Platform.OS === "web" ? 600 : height;
+
+// Full bleed — content goes UNDER the floating tab bar
+export const REEL_HEIGHT = height;
+
+const TAB_BAR_HEIGHT = Platform.OS === "web" ? 84 : 83;
 
 interface ReelItem {
   id: string;
@@ -33,15 +37,17 @@ interface ReelItem {
   thumbnail: string;
 }
 
-const REEL_COLORS: Record<string, string[]> = {
-  r1: ["#1A1512", "#2C2318", "#7A9E87"],
-  r2: ["#1C1410", "#332518", "#C46A3F"],
-  r3: ["#181A16", "#242D20", "#5A8A6A"],
-  r4: ["#1C1614", "#2E2018", "#E8956D"],
-  r5: ["#1A1816", "#2A2420", "#A07860"],
+// Each reel gets its own warm dark palette with a dominant accent colour
+const REEL_PALETTES: Record<string, { bg: string; mid: string; orb: string; orb2: string }> = {
+  r1: { bg: "#141612", mid: "#1E2A1F", orb: "#7A9E87", orb2: "#A8C5B0" },
+  r2: { bg: "#1A1108", mid: "#2C1E0E", orb: "#C46A3F", orb2: "#E8956D" },
+  r3: { bg: "#12181A", mid: "#1A2830", orb: "#5A8A9A", orb2: "#8ABAC8" },
+  r4: { bg: "#1A1310", mid: "#2C1E16", orb: "#C4834A", orb2: "#E8A86D" },
+  r5: { bg: "#161412", mid: "#241E18", orb: "#9A7B5E", orb2: "#C4A882" },
 };
 
 function formatCount(n: number): string {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + "M";
   if (n >= 1000) return (n / 1000).toFixed(1) + "k";
   return n.toString();
 }
@@ -55,81 +61,122 @@ interface Props {
 }
 
 export function ReelCard({ reel, isActive, onLike, onSave, onCreatorPress }: Props) {
-  const colors = useColors();
-  const bgColors = REEL_COLORS[reel.thumbnail] || REEL_COLORS.r1;
+  const palette = REEL_PALETTES[reel.thumbnail] || REEL_PALETTES.r1;
 
   const progressAnim = useRef(new Animated.Value(0)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const animRef = useRef<Animated.CompositeAnimation | null>(null);
+  const pulseAnim = useRef(new Animated.Value(0.7)).current;
+  const pulseRef = useRef<Animated.CompositeAnimation | null>(null);
+  const progressRef = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
     if (isActive) {
       progressAnim.setValue(0);
-      animRef.current = Animated.timing(progressAnim, {
+
+      progressRef.current = Animated.timing(progressAnim, {
         toValue: 1,
         duration: reel.durationSeconds * 1000,
         useNativeDriver: false,
       });
-      animRef.current.start();
+      progressRef.current.start();
 
-      const pulse = Animated.loop(
+      pulseRef.current = Animated.loop(
         Animated.sequence([
-          Animated.timing(pulseAnim, { toValue: 0.85, duration: 800, useNativeDriver: true }),
-          Animated.timing(pulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 900, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 0.7, duration: 900, useNativeDriver: true }),
         ])
       );
-      pulse.start();
-      return () => {
-        animRef.current?.stop();
-        pulse.stop();
-        pulseAnim.setValue(1);
-      };
+      pulseRef.current.start();
     } else {
-      animRef.current?.stop();
+      progressRef.current?.stop();
+      pulseRef.current?.stop();
       progressAnim.setValue(0);
+      pulseAnim.setValue(0.7);
     }
+
+    return () => {
+      progressRef.current?.stop();
+      pulseRef.current?.stop();
+    };
   }, [isActive, reel.id]);
-
-  const handleLike = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onLike();
-  };
-
-  const handleSave = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onSave();
-  };
 
   const progressWidth = progressAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ["0%", "100%"],
   });
 
+  const handleLike = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onLike();
+  };
+  const handleSave = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onSave();
+  };
+
   return (
-    <View style={[styles.container, { height: REEL_HEIGHT }]}>
-      <View style={[styles.background, { backgroundColor: bgColors[0] }]}>
-        <View style={[styles.gradientOverlay, { backgroundColor: bgColors[1], opacity: 0.6 }]} />
-        <View style={[styles.accentOrb, { backgroundColor: bgColors[2], opacity: 0.25 }]} />
-        <View style={[styles.accentOrb2, { backgroundColor: bgColors[2], opacity: 0.12 }]} />
+    <View style={[styles.container, { backgroundColor: palette.bg }]}>
+      {/* Background layers */}
+      <View style={[styles.midLayer, { backgroundColor: palette.mid }]} />
 
-        <Animated.View style={[styles.playIconContainer, { opacity: isActive ? pulseAnim : 0.3 }]}>
-          <View style={styles.playCircle}>
-            <Feather name={isActive ? "pause" : "play"} size={28} color="rgba(255,255,255,0.9)" />
-          </View>
-        </Animated.View>
-      </View>
+      {/* Large translucent orb — top left */}
+      <View
+        style={[
+          styles.orb,
+          styles.orbTopLeft,
+          { backgroundColor: palette.orb },
+        ]}
+      />
+      {/* Small orb — bottom right */}
+      <View
+        style={[
+          styles.orb,
+          styles.orbBottomRight,
+          { backgroundColor: palette.orb2 },
+        ]}
+      />
+      {/* Tiny accent orb — centre */}
+      <View
+        style={[
+          styles.orb,
+          styles.orbCentre,
+          { backgroundColor: palette.orb },
+        ]}
+      />
 
-      {/* Progress bar */}
+      {/* Bottom gradient — deep fade to black so text is always readable */}
+      <LinearGradient
+        colors={["transparent", "rgba(0,0,0,0.55)", "rgba(0,0,0,0.88)"]}
+        locations={[0.35, 0.65, 1]}
+        style={styles.bottomGradient}
+      />
+
+      {/* Top gradient — subtle fade for tags */}
+      <LinearGradient
+        colors={["rgba(0,0,0,0.45)", "transparent"]}
+        locations={[0, 1]}
+        style={styles.topGradient}
+      />
+
+      {/* Progress bar — full bleed at very top */}
       <View style={styles.progressTrack}>
         <Animated.View
           style={[
             styles.progressFill,
-            { width: progressWidth, backgroundColor: bgColors[2] },
+            { width: progressWidth, backgroundColor: palette.orb2 },
           ]}
         />
       </View>
 
-      <View style={styles.overlay}>
+      {/* Play / pause visual */}
+      <Animated.View style={[styles.centerIcon, { opacity: pulseAnim }]}>
+        <View style={styles.centerIconInner}>
+          <Feather name={isActive ? "pause" : "play"} size={26} color="rgba(255,255,255,0.9)" />
+        </View>
+      </Animated.View>
+
+      {/* HUD overlay */}
+      <View style={styles.hud}>
+        {/* Top row: tags + duration */}
         <View style={styles.topRow}>
           <View style={styles.tagRow}>
             {reel.tags.slice(0, 2).map((tag) => (
@@ -143,48 +190,52 @@ export function ReelCard({ reel, isActive, onLike, onSave, onCreatorPress }: Pro
           </View>
         </View>
 
+        {/* Side actions */}
         <View style={styles.sideActions}>
           <TouchableOpacity style={styles.actionBtn} onPress={handleLike} activeOpacity={0.8}>
             <Ionicons
               name={reel.liked ? "heart" : "heart-outline"}
-              size={28}
-              color={reel.liked ? "#E8956D" : "#fff"}
+              size={30}
+              color={reel.liked ? "#E8956D" : "rgba(255,255,255,0.95)"}
             />
             <Text style={styles.actionCount}>{formatCount(reel.likes + (reel.liked ? 1 : 0))}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionBtn} activeOpacity={0.8}>
-            <Ionicons name="chatbubble-outline" size={26} color="#fff" />
+            <Ionicons name="chatbubble-outline" size={28} color="rgba(255,255,255,0.95)" />
             <Text style={styles.actionCount}>{formatCount(reel.comments)}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionBtn} activeOpacity={0.8}>
-            <Feather name="share-2" size={24} color="#fff" />
+            <Feather name="send" size={26} color="rgba(255,255,255,0.95)" />
             <Text style={styles.actionCount}>{formatCount(reel.shares)}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionBtn} onPress={handleSave} activeOpacity={0.8}>
             <Ionicons
               name={reel.saved ? "bookmark" : "bookmark-outline"}
-              size={26}
-              color={reel.saved ? "#A8C5B0" : "#fff"}
+              size={28}
+              color={reel.saved ? palette.orb2 : "rgba(255,255,255,0.95)"}
             />
           </TouchableOpacity>
         </View>
 
+        {/* Bottom content */}
         <View style={styles.bottomContent}>
           <TouchableOpacity style={styles.creatorRow} onPress={onCreatorPress} activeOpacity={0.85}>
-            <View style={[styles.avatarCircle, { backgroundColor: bgColors[2] }]}>
-              <Text style={styles.avatarText}>{reel.creatorAvatar}</Text>
+            <View style={[styles.avatarRing, { borderColor: palette.orb2 + "80" }]}>
+              <View style={[styles.avatarFill, { backgroundColor: palette.orb }]}>
+                <Text style={styles.avatarText}>{reel.creatorAvatar}</Text>
+              </View>
             </View>
-            <View>
+            <View style={styles.creatorInfo}>
               <Text style={styles.creatorName}>{reel.creator}</Text>
               <Text style={styles.creatorHandle}>{reel.creatorHandle}</Text>
             </View>
             {isActive && (
-              <View style={styles.livePill}>
-                <View style={styles.liveDot} />
-                <Text style={styles.liveText}>Playing</Text>
+              <View style={[styles.playingPill, { borderColor: palette.orb2 + "60" }]}>
+                <Animated.View style={[styles.playingDot, { backgroundColor: palette.orb2, opacity: pulseAnim }]} />
+                <Text style={[styles.playingText, { color: palette.orb2 }]}>Playing</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -200,66 +251,89 @@ export function ReelCard({ reel, isActive, onLike, onSave, onCreatorPress }: Pro
 const styles = StyleSheet.create({
   container: {
     width,
-    backgroundColor: "#1A1512",
-  },
-  background: {
-    ...StyleSheet.absoluteFillObject,
+    height: REEL_HEIGHT,
     overflow: "hidden",
   },
-  gradientOverlay: {
+  midLayer: {
     ...StyleSheet.absoluteFillObject,
+    opacity: 0.7,
   },
-  accentOrb: {
+  orb: {
     position: "absolute",
-    width: width * 1.3,
-    height: width * 1.3,
-    borderRadius: width * 0.65,
+    borderRadius: 9999,
+  },
+  orbTopLeft: {
+    width: width * 1.1,
+    height: width * 1.1,
     top: -width * 0.35,
-    left: -width * 0.15,
+    left: -width * 0.25,
+    opacity: 0.18,
   },
-  accentOrb2: {
+  orbBottomRight: {
+    width: width * 0.75,
+    height: width * 0.75,
+    bottom: height * 0.12,
+    right: -width * 0.25,
+    opacity: 0.14,
+  },
+  orbCentre: {
+    width: width * 0.55,
+    height: width * 0.55,
+    top: height * 0.3,
+    left: width * 0.22,
+    opacity: 0.09,
+  },
+  bottomGradient: {
     position: "absolute",
-    width: width * 0.8,
-    height: width * 0.8,
-    borderRadius: width * 0.4,
-    bottom: -width * 0.1,
-    right: -width * 0.2,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: height * 0.55,
   },
-  playIconContainer: {
+  topGradient: {
     position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: [{ translateX: -30 }, { translateY: -30 }],
-  },
-  playCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: "rgba(255,255,255,0.12)",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1.5,
-    borderColor: "rgba(255,255,255,0.2)",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: height * 0.2,
   },
   progressTrack: {
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
-    height: 2.5,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    zIndex: 10,
+    height: 3,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    zIndex: 20,
   },
   progressFill: {
     height: "100%",
     borderRadius: 2,
   },
-  overlay: {
+  centerIcon: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: [{ translateX: -28 }, { translateY: -28 }],
+    zIndex: 5,
+  },
+  centerIconInner: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.18)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  hud: {
     ...StyleSheet.absoluteFillObject,
-    justifyContent: "space-between",
-    paddingTop: Platform.OS === "web" ? 80 : 64,
-    paddingBottom: Platform.OS === "web" ? 100 : 120,
+    zIndex: 10,
+    paddingTop: Platform.OS === "web" ? 24 : 56,
+    paddingBottom: TAB_BAR_HEIGHT + 24,
     paddingHorizontal: 16,
+    justifyContent: "space-between",
   },
   topRow: {
     flexDirection: "row",
@@ -268,57 +342,57 @@ const styles = StyleSheet.create({
   },
   tagRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
     gap: 6,
     flex: 1,
+    flexWrap: "wrap",
   },
   tagPill: {
-    backgroundColor: "rgba(122,158,135,0.35)",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.12)",
     borderWidth: 1,
-    borderColor: "rgba(122,158,135,0.3)",
+    borderColor: "rgba(255,255,255,0.15)",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
   },
   tagText: {
-    color: "#fff",
+    color: "rgba(255,255,255,0.9)",
     fontSize: 11,
     fontWeight: "600",
   },
   durationBadge: {
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: "rgba(0,0,0,0.4)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: 5,
     borderRadius: 20,
     marginLeft: 8,
   },
   durationText: {
-    color: "#fff",
+    color: "rgba(255,255,255,0.9)",
     fontSize: 12,
     fontWeight: "600",
   },
   sideActions: {
     position: "absolute",
     right: 14,
-    bottom: Platform.OS === "web" ? 140 : 180,
+    bottom: TAB_BAR_HEIGHT + 200,
     alignItems: "center",
-    gap: 22,
+    gap: 24,
+    zIndex: 12,
   },
   actionBtn: {
     alignItems: "center",
-    gap: 4,
+    gap: 5,
   },
   actionCount: {
-    color: "#fff",
+    color: "rgba(255,255,255,0.9)",
     fontSize: 12,
-    fontWeight: "600",
-    textShadowColor: "rgba(0,0,0,0.5)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
+    fontWeight: "700",
   },
   bottomContent: {
-    gap: 8,
-    paddingRight: 64,
+    gap: 10,
+    paddingRight: 72,
   },
   creatorRow: {
     flexDirection: "row",
@@ -326,60 +400,66 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 4,
   },
-  avatarCircle: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+  avatarRing: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    borderWidth: 2,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.35)",
+  },
+  avatarFill: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: "center",
+    justifyContent: "center",
   },
   avatarText: {
-    color: "#fff",
+    color: "rgba(255,255,255,0.95)",
     fontSize: 13,
-    fontWeight: "700",
+    fontWeight: "800",
+  },
+  creatorInfo: {
+    flex: 1,
+    gap: 1,
   },
   creatorName: {
     color: "#fff",
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: "700",
   },
   creatorHandle: {
-    color: "rgba(255,255,255,0.6)",
+    color: "rgba(255,255,255,0.55)",
     fontSize: 12,
   },
-  livePill: {
+  playingPill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
-    backgroundColor: "rgba(122,158,135,0.3)",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.08)",
     borderWidth: 1,
-    borderColor: "rgba(168,197,176,0.5)",
-    marginLeft: 4,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 14,
   },
-  liveDot: {
+  playingDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#A8C5B0",
   },
-  liveText: {
-    color: "#A8C5B0",
-    fontSize: 10,
+  playingText: {
+    fontSize: 11,
     fontWeight: "700",
   },
   reelTitle: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "700",
-    lineHeight: 22,
+    lineHeight: 24,
   },
   reelDesc: {
-    color: "rgba(255,255,255,0.72)",
+    color: "rgba(255,255,255,0.65)",
     fontSize: 13,
     lineHeight: 18,
   },
