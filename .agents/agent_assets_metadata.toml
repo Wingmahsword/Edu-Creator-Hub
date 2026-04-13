@@ -1,0 +1,26 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "YLeyfAO21z0-jdDz-61eM"
+uri = "file://artifacts/ai-edu/assets/images/icon.png"
+type = "image"
+title = "ai edu app icon"
+
+[[generated]]
+id = "gv-aUYseW8iGPbmuJZTC-"
+uri = "file://artifacts/ai-edu/assets/images/hero_banner.png"
+type = "image"
+title = "ai hero banner"
+
+[[generated]]
+id = "10paDK__gavA-U-0q2ywH"
+uri = "file://artifacts/ai-edu/assets/images/course_prompt.png"
+type = "image"
+title = "prompt engineering course"
+
+[[generated]]
+id = "EKlBTlZI6pFHahxsuhq07"
+uri = "file://artifacts/ai-edu/assets/images/course_ml.png"
+type = "image"
+title = "machine learning course"
