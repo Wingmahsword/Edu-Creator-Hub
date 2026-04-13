@@ -32,11 +32,11 @@ interface ReelItem {
 }
 
 const REEL_COLORS: Record<string, string[]> = {
-  r1: ["#1a0533", "#2D1B69", "#6C63FF"],
-  r2: ["#0a1628", "#1e3a5f", "#2563EB"],
-  r3: ["#0f1923", "#162032", "#0EA5E9"],
-  r4: ["#1a1009", "#3d2510", "#F97316"],
-  r5: ["#0f1a1a", "#1a3333", "#14B8A6"],
+  r1: ["#1A1512", "#2C2318", "#7A9E87"],
+  r2: ["#1C1410", "#332518", "#C46A3F"],
+  r3: ["#181A16", "#242D20", "#5A8A6A"],
+  r4: ["#1C1614", "#2E2018", "#E8956D"],
+  r5: ["#1A1816", "#2A2420", "#A07860"],
 };
 
 function formatCount(n: number): string {
@@ -130,7 +130,7 @@ export function ReelCard({ reel, onLike, onSave, onCreatorPress }: Props) {
             <Ionicons
               name={reel.saved ? "bookmark" : "bookmark-outline"}
               size={26}
-              color={reel.saved ? "#A78BFA" : "#fff"}
+              color={reel.saved ? "#A8C5B0" : "#fff"}
             />
           </TouchableOpacity>
         </View>
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   tagPill: {
-    backgroundColor: "rgba(108,99,255,0.4)",
+    backgroundColor: "rgba(122,158,135,0.4)",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 20,

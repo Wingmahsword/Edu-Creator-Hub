@@ -23,28 +23,28 @@ const PROMPT_TEMPLATES = [
     icon: "edit-3",
     label: "Chain of Thought",
     prompt: "Let's think step by step. [Your question here]",
-    color: "#6C63FF",
+    color: "#7A9E87",
   },
   {
     id: "t2",
     icon: "user",
     label: "Role Prompting",
     prompt: "You are an expert [role]. Help me [task].",
-    color: "#2563EB",
+    color: "#C46A3F",
   },
   {
     id: "t3",
     icon: "list",
     label: "Few-Shot",
     prompt: "Here are some examples:\nInput: [example 1]\nOutput: [result 1]\n\nNow do this: [your input]",
-    color: "#10B981",
+    color: "#5A8A6A",
   },
   {
     id: "t4",
     icon: "target",
     label: "STAR Method",
     prompt: "Situation: [context]\nTask: [what needs to be done]\nAction: [steps to take]\nResult: [expected outcome]",
-    color: "#F97316",
+    color: "#9A7B5E",
   },
 ];
 
@@ -385,13 +385,13 @@ export default function PlaygroundScreen() {
 
                   if (showExplanation) {
                     if (isCorrect) {
-                      bg = "#10B98115";
-                      border = "#10B981";
-                      textColor = "#10B981";
+                      bg = "#7A9E8715";
+                      border = "#7A9E87";
+                      textColor = "#5A8A6A";
                     } else if (isSelected && !isCorrect) {
-                      bg = "#EF444415";
-                      border = "#EF4444";
-                      textColor = "#EF4444";
+                      bg = "#C46A3F15";
+                      border = "#C46A3F";
+                      textColor = "#B8634E";
                     }
                   } else if (isSelected) {
                     bg = colors.primary + "15";
@@ -413,10 +413,10 @@ export default function PlaygroundScreen() {
                       </View>
                       <Text style={[styles.optionText, { color: textColor }]}>{option}</Text>
                       {showExplanation && isCorrect && (
-                        <Ionicons name="checkmark-circle" size={18} color="#10B981" style={{ marginLeft: "auto" }} />
+                        <Ionicons name="checkmark-circle" size={18} color="#7A9E87" style={{ marginLeft: "auto" }} />
                       )}
                       {showExplanation && isSelected && !isCorrect && (
-                        <Ionicons name="close-circle" size={18} color="#EF4444" style={{ marginLeft: "auto" }} />
+                        <Ionicons name="close-circle" size={18} color="#C46A3F" style={{ marginLeft: "auto" }} />
                       )}
                     </TouchableOpacity>
                   );

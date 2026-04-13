@@ -18,7 +18,7 @@ interface Creator {
   specialty: string;
 }
 
-const AVATAR_COLORS = ["#6C63FF", "#2563EB", "#EC4899", "#F97316", "#10B981", "#8B5CF6"];
+const AVATAR_COLORS = ["#7A9E87", "#C46A3F", "#B8634E", "#5A8A6A", "#9A7B5E", "#A8C5B0"];
 
 function getAvatarColor(str: string): string {
   let hash = 0;

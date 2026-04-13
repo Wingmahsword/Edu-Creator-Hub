@@ -1,51 +1,71 @@
 const colors = {
   light: {
-    text: "#1a1a2e",
-    tint: "#6C63FF",
+    // Legacy aliases
+    text: "#1C1917",
+    tint: "#7A9E87",
 
-    background: "#F8F9FC",
-    foreground: "#1a1a2e",
+    // Core surfaces
+    background: "#FAF8F5",
+    foreground: "#1C1917",
 
+    // Cards / elevated surfaces
     card: "#FFFFFF",
-    cardForeground: "#1a1a2e",
+    cardForeground: "#1C1917",
 
-    primary: "#6C63FF",
-    primaryForeground: "#ffffff",
+    // Primary — sage green
+    primary: "#7A9E87",
+    primaryForeground: "#FFFFFF",
 
-    secondary: "#EEF0FF",
-    secondaryForeground: "#4A42CC",
+    // Secondary — light sage wash
+    secondary: "#EEF3EF",
+    secondaryForeground: "#4A6B55",
 
-    muted: "#F0F2F8",
-    mutedForeground: "#8A8FA8",
+    // Muted
+    muted: "#F4F0EB",
+    mutedForeground: "#9C9189",
 
-    accent: "#E8F4FF",
-    accentForeground: "#2563EB",
+    // Accent — warm peach
+    accent: "#F9EDE6",
+    accentForeground: "#C46A3F",
 
-    destructive: "#ef4444",
-    destructiveForeground: "#ffffff",
+    // Destructive
+    destructive: "#D95F3B",
+    destructiveForeground: "#FFFFFF",
 
-    border: "#E8EAF2",
-    input: "#E8EAF2",
+    // Borders and inputs
+    border: "#EDE8E3",
+    input: "#EDE8E3",
 
+    // Tab bar / header
     tabBar: "#FFFFFF",
-    headerBg: "#F8F9FC",
+    headerBg: "#FAF8F5",
 
-    gradientStart: "#6C63FF",
-    gradientEnd: "#A78BFA",
-    gradientMid: "#818CF8",
+    // Gradient tokens (used in reel overlays etc.)
+    gradientStart: "#7A9E87",
+    gradientEnd: "#E8956D",
+    gradientMid: "#A8C5B0",
 
-    success: "#10B981",
-    successForeground: "#ffffff",
+    // Status
+    success: "#7A9E87",
+    successForeground: "#FFFFFF",
 
-    tag: "#EEF0FF",
-    tagForeground: "#6C63FF",
+    // Tag chips
+    tag: "#EEF3EF",
+    tagForeground: "#4A6B55",
 
-    reelBg: "#0F0F1A",
+    // Reel / dark surface
+    reelBg: "#1A1512",
     reelForeground: "#FFFFFF",
     reelMuted: "rgba(255,255,255,0.6)",
+
+    // Peach highlight
+    peach: "#E8956D",
+    peachLight: "#F9EDE6",
+    sage: "#7A9E87",
+    sageLight: "#EEF3EF",
   },
 
-  radius: 14,
+  radius: 16,
 };
 
 export default colors;

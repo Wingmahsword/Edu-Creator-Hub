@@ -10,27 +10,27 @@ import { Feather, Ionicons } from "@expo/vector-icons";
 import { useColors } from "@/hooks/useColors";
 
 const COURSE_COLORS: Record<string, string> = {
-  prompt: "#EEF0FF",
-  ml: "#E8F4FF",
-  dl: "#FDF2F8",
-  apps: "#FFF7ED",
-  ethics: "#F0FDF4",
-  llm: "#F5F3FF",
+  prompt: "#EEF3EF",
+  ml: "#F9EDE6",
+  dl: "#F5EDE8",
+  apps: "#FBF3EE",
+  ethics: "#EBF2EE",
+  llm: "#F2EEE8",
 };
 
 const COURSE_ACCENT: Record<string, string> = {
-  prompt: "#6C63FF",
-  ml: "#2563EB",
-  dl: "#EC4899",
-  apps: "#F97316",
-  ethics: "#10B981",
-  llm: "#8B5CF6",
+  prompt: "#7A9E87",
+  ml: "#C46A3F",
+  dl: "#B8634E",
+  apps: "#D4855A",
+  ethics: "#5A8A6A",
+  llm: "#9A7B5E",
 };
 
 const LEVEL_COLORS: Record<string, string> = {
-  Beginner: "#10B981",
-  Intermediate: "#F59E0B",
-  Advanced: "#EF4444",
+  Beginner: "#7A9E87",
+  Intermediate: "#C46A3F",
+  Advanced: "#B8634E",
 };
 
 interface Course {
