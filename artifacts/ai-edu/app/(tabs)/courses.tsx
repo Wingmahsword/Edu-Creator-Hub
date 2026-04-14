@@ -29,18 +29,21 @@ const PARTNER_LABELS: Record<string, string> = {
   anthropic: "Anthropic",
   google: "Google",
   internal: "EduAI",
+  youtube: "YouTube",
 };
 const PARTNER_COLORS: Record<string, string> = {
   coursera: "#0056D2",
   anthropic: "#C46A3F",
   google: "#4285F4",
   internal: "#7A9E87",
+  youtube: "#FF0000",
 };
 const PARTNER_ICONS: Record<string, string> = {
   coursera: "C",
   anthropic: "A",
   google: "G",
   internal: "E",
+  youtube: "Y",
 };
 
 const THUMB_BG: Record<string, string> = {
@@ -94,6 +97,22 @@ const COURSE_EXTRAS: Record<string, { learn: string[]; modules: string[] }> = {
   google_gemini: {
     learn: ["Call the Gemini API from scratch", "Multimodal inputs: text, images, code", "Build chat applications with context", "Function calling & structured output", "Production API best practices"],
     modules: ["Setup & Authentication", "Text Generation Basics", "Multimodal Capabilities", "Chat & Memory", "Advanced API Features"],
+  },
+  yt_karpathy_hero: {
+    learn: ["Build neural networks from scratch", "Understand backpropagation in depth", "Implement Language Models and GPT", "Master PyTorch fundamentals", "Grasp Transformer architecture"],
+    modules: ["The Spell-out Intro", "Language Modeling: Makemore", "Activations & Gradients", "Becoming a Backprop Ninja", "Building GPT from Scratch"],
+  },
+  yt_stanford_cs229: {
+    learn: ["Foundational ML theory and math", "Supervised & Unsupervised learning", "SVMs, Kernels, and Neural Nets", "Learning theory and generalization", "Reinforcement learning basics"],
+    modules: ["Part 1: Supervised Learning", "Part 2: Learning Theory", "Part 3: Unsupervised Learning", "Part 4: Reinforcement Learning"],
+  },
+  yt_huggingface_nlp: {
+    learn: ["Using the Transformers library", "Tokenization and preprocessing", "Fine-tuning pretrained models", "Semantic search and embeddings", "Deploying models with Hugging Face"],
+    modules: ["Transformer Models", "Using Transformers", "Fine-tuning", "Sharing Models", "Javascript & Web Apps"],
+  },
+  yt_llmops: {
+    learn: ["Building real-world LLM apps", "Monitoring and Observability for LLMs", "Evaluation and Debugging", "Prompt Management", "Vector DBs in Production"],
+    modules: ["LLM Foundations", "Evaluation Frameworks", "Observability", "Prompt Ops", "Deployment Strategies"],
   },
 };
 
@@ -628,6 +647,7 @@ export default function CoursesScreen() {
   const courseraList = courses.filter((c) => c.partner === "coursera");
   const anthropicList = courses.filter((c) => c.partner === "anthropic");
   const googleList = courses.filter((c) => c.partner === "google");
+  const youtubeList = courses.filter((c) => c.partner === "youtube");
 
   const filtered = courses.filter((c) => {
     const matchesCat = selectedCategory === "All" || c.category === selectedCategory;
@@ -705,6 +725,7 @@ export default function CoursesScreen() {
             <PartnerSection partner="coursera" courses={courseraList} onTap={handleTapCourse} />
             <PartnerSection partner="anthropic" courses={anthropicList} onTap={handleTapCourse} />
             <PartnerSection partner="google" courses={googleList} onTap={handleTapCourse} />
+            <PartnerSection partner="youtube" courses={youtubeList} onTap={handleTapCourse} />
           </>
         )}
 
