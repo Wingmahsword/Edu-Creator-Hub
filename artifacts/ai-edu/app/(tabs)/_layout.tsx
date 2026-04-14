@@ -50,8 +50,8 @@ function ClassicTabLayout() {
           backgroundColor: "transparent",
           borderTopWidth: 0,
           elevation: 0,
-          shadowOpacity: 0,
           height: isWeb ? 84 : 83,
+          ...(Platform.OS !== "web" ? { shadowOpacity: 0 } : {}),
         },
         tabBarBackground: () => (
           <BlurView

@@ -784,11 +784,16 @@ const ds = StyleSheet.create({
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     maxHeight: SCREEN_HEIGHT * 0.92,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.18,
-    shadowRadius: 20,
-    elevation: 24,
+    ...Platform.select({
+      web: { boxShadow: "0px -4px 20px rgba(0,0,0,0.18)" } as any,
+      default: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.18,
+        shadowRadius: 20,
+        elevation: 24,
+      },
+    }),
     overflow: "hidden",
   },
   handleBar: {
